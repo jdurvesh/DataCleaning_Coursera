@@ -1,0 +1,121 @@
+---
+title: "Coursera_DataCleaning"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(plyr)
+
+```
+
+```{r}
+## reading in the features and activity
+features_names <- read.table("./UCI HAR Dataset/features.txt")
+activity_names <- read.table("./UCI HAR Dataset/activity_labels.txt", header = FALSE)
+
+```
+
+```{r}
+#reading the training data
+
+subject_train <- read.table("./UCI HAR Dataset/train/subject_train.txt", header = FALSE)
+activity_train <- read.table("./UCI HAR Dataset/train/y_train.txt", header = FALSE)
+features_train <- read.table("./UCI HAR Dataset/train/X_train.txt", header = FALSE)
+
+```
+
+```{r}
+# reading the test data
+
+subject_test <- read.table("./UCI HAR Dataset/test/subject_test.txt", header = FALSE)
+activity_test <- read.table("./UCI HAR Dataset/test/y_test.txt", header = FALSE)
+features_test <- read.table("./UCI HAR Dataset/test/X_test.txt", header = FALSE)
+
+
+```
+
+```{r}
+# combining the train and test sets 
+
+subject <- bind_rows(subject_train, subject_test)
+activity <- bind_rows(activity_train, activity_test)
+features <- bind_rows(features_train, features_test)
+```
+
+```{r}
+## Adding Column Names and Column Binding the three data sets 
+colnames(features) <- t(features_names[2])
+colnames(activity) <- "Activity"
+colnames(subject) <- "Subject"
+data_final <- bind_cols(features,activity,subject)
+```
+
+```{r}
+## Select only columns with mean and stdev
+
+data_mean_std<-data_final %>% 
+  select(contains(c("Mean","Std","Activity","Subject")))
+
+dim(data_mean_std)
+
+```
+
+```{r}
+#P.3
+typeof(data_mean_std$Activity)
+unique(data_mean_std$Activity)
+unique(activity_names)
+data_mean_std$Activity<-plyr::mapvalues(data_mean_std$Activity,c(1,2,3,4,5,6),c("WALKING","WALKING_UPSTAIRS","WALKING_DOWNSTAIRS","SITTING","STANDING","LAYING"))
+```
+
+
+```{r}
+unique(data_mean_std$Activity)
+
+```
+
+
+```{r}
+#P.4 
+
+head(names(data_mean_std))
+
+```
+```{r}
+
+names(data_mean_std)<-gsub("Acc", "Accelerometer", names(data_mean_std))
+names(data_mean_std)<-gsub("Gyro", "Gyroscope", names(data_mean_std))
+names(data_mean_std)<-gsub("BodyBody", "Body", names(data_mean_std))
+names(data_mean_std)<-gsub("Mag", "Magnitude", names(data_mean_std))
+names(data_mean_std)<-gsub("^t", "Time", names(data_mean_std))
+names(data_mean_std)<-gsub("^f", "Frequency", names(data_mean_std))
+names(data_mean_std)<-gsub("tBody", "TimeBody", names(data_mean_std))
+names(data_mean_std)<-gsub("-mean()", "Mean", names(data_mean_std), ignore.case = TRUE)
+names(data_mean_std)<-gsub("-std()", "STD", names(data_mean_std), ignore.case = TRUE)
+names(data_mean_std)<-gsub("-freq()", "Frequency", names(data_mean_std), ignore.case = TRUE)
+names(data_mean_std)<-gsub("angle", "Angle", names(data_mean_std))
+names(data_mean_std)<-gsub("gravity", "Gravity", names(data_mean_std))
+
+```
+
+
+```{r}
+#P5
+
+tidy_data<-data_mean_std %>% 
+  group_by(Subject,Activity) %>% 
+  summarise_all(mean) %>% 
+  arrange(Subject,Activity)
+
+write.csv(tidy_data, file = "Tidy.csv", row.names = FALSE)
+
+
+```
+
+
+
